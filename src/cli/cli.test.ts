@@ -6,12 +6,12 @@ import { describe, expect, it } from 'vitest'
 
 import { packagePath } from '../package-path'
 import { testEnv, testPath } from '../testing/env'
-import { fakeCli } from '../testing/fake-cli'
+import { fakeCli, type FakeRun } from '../testing/fake-cli'
 import { runCli } from '../testing/run-cli'
 
 const fixture = (name: string) => readFileSync(packagePath('src/testing/fixtures', name), 'utf8')
 
-function setup(runs = [{ stdout: fixture('codex-reply.jsonl') }]) {
+function setup(runs: FakeRun[] = [{ stdout: fixture('codex-reply.jsonl') }]) {
   const fake = fakeCli('codex', runs)
   const home = mkdtempSync(join(tmpdir(), 'parlo-home-'))
   const cwd = realpathSync(mkdtempSync(join(tmpdir(), 'parlo-work-')))

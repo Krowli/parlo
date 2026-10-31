@@ -16,15 +16,18 @@ export interface OpenStore {
 }
 
 /**
- * Two agents' first parlo runs can open an empty home at the same moment, and
- * drizzle's migrator would race to create the same tables. A second SQLite
- * file held in an exclusive transaction makes them take turns.
+ * Two agents' first parlo runs can open an empty home at the same moment. On a
+ * fresh file, `journal_mode = WAL` then fails with SQLITE_BUSY without waiting
+ * for busy_timeout (seen in the race test), and drizzle's migrator would race
+ * to create the same tables. A second SQLite file held in an exclusive
+ * transaction makes both steps take turns.
  */
-function migrateOnce(home: string, db: BetterSQLite3Database<typeof schema>): void {
+function prepareOnce(home: string, connection: Database.Database, db: BetterSQLite3Database<typeof schema>): void {
   const lock = new Database(join(home, 'migrate.lock'))
   lock.pragma('busy_timeout = 10000')
   lock.exec('BEGIN EXCLUSIVE')
   try {
+    connection.pragma('journal_mode = WAL')
     migrate(db, { migrationsFolder: packagePath('drizzle') })
   }
   finally {
@@ -37,9 +40,8 @@ export function openStore(home: string = parloHome()): OpenStore {
   mkdirSync(home, { recursive: true })
   const connection = new Database(join(home, 'parlo.db'))
   connection.pragma('busy_timeout = 5000')
-  connection.pragma('journal_mode = WAL')
   connection.pragma('foreign_keys = ON')
   const db = drizzle(connection, { schema })
-  migrateOnce(home, db)
+  prepareOnce(home, connection, db)
   return { db, close: () => connection.close() }
 }
