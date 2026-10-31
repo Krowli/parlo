@@ -132,4 +132,4 @@ npm uninstall -g parlo
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE) — free for noncommercial use (personal, research, educational, and more; read the [license](LICENSE) for the exact terms). Commercial use — selling it, or building it into a paid product or service — needs a separate license: write to lionmause999@gmail.com.
+[PolyForm Noncommercial 1.0.0](LICENSE) — free for noncommercial use (personal, research, educational, and more; read the [license](LICENSE) for the exact terms). Commercial use — selling it, or building it into a paid product or service — needs a separate license: write to contact@aioomi.com.
