@@ -5,7 +5,7 @@ import { EXIT, type ExitCode } from '../../errors'
 import { parloHome } from '../../store/home'
 import { openStore } from '../../store/open'
 import { confirm, installsFor, tildify } from './connect'
-import { stopTargets } from './stop'
+import { stopTargets } from '../../stop'
 
 const LAST_STEP = 'Last step: npm uninstall -g parlo'
 

@@ -7,6 +7,9 @@ import { describe, expect, it } from 'vitest'
 
 import { packagePath } from '../package-path'
 import { isAlive } from '../process'
+import { openStore } from '../store/open'
+import { threads } from '../store/schema'
+import { beginAsk, recordColleaguePid, recordSession } from '../store/threads'
 import { testEnv, testPath } from '../testing/env'
 import { fakeCli } from '../testing/fake-cli'
 import { runCli } from '../testing/run-cli'
@@ -28,7 +31,7 @@ function hangingAsk() {
     for (let i = 0; i < 100 && fake.calls().length === 0; i++) await new Promise(resolve => setTimeout(resolve, 100))
     return fake.calls()[0].pid
   }
-  return { child, env, cwd, exited, colleagueStarted, stderr: () => stderr }
+  return { child, env, cwd, home, exited, colleagueStarted, stderr: () => stderr }
 }
 
 async function gone(pid: number): Promise<boolean> {
@@ -62,5 +65,25 @@ describe('stopping a colleague', () => {
   it('says when nothing was running', async () => {
     const home = mkdtempSync(join(tmpdir(), 'parlo-home-'))
     expect((await runCli(['stop', '--all'], testEnv({ PARLO_HOME: home }))).stdout).toBe('parlo: nothing was running.\n')
+  })
+})
+
+describe('stopping reaches colleagues of colleagues', () => {
+  it('stopping thread 1 also stops the thread its colleague started (a detached one, outside its process group)', async () => {
+    const run = hangingAsk()
+    await run.colleagueStarted() // thread 1's Codex is running
+    // Thread 1's colleague asks a colleague of its own: thread 2, whose colleague runs in a group of its own.
+    // The fake prints its stream (and so its session) only at the end, so name the session here.
+    const grandchild = spawn('sleep', ['30'], { detached: true, stdio: 'ignore' })
+    const { db, close } = openStore(run.home)
+    const first = db.select().from(threads).get()!
+    recordSession(db, first.colleagueId, 'codex-colleague')
+    const second = beginAsk(db, { caller: { vendor: 'codex', vendorSessionId: 'codex-colleague' }, cwd: run.cwd, vendor: 'claude', threadId: null, access: null, body: 'nested', runnerPid: process.pid, now: new Date() })
+    recordColleaguePid(db, second.threadId, grandchild.pid!)
+    close()
+    run.child.kill('SIGTERM')
+    expect(await run.exited).toBe(5)
+    expect(await gone(grandchild.pid!)).toBe(true)
+    expect((await runCli(['show', String(second.threadId)], run.env, run.cwd)).stdout).toContain('— stopped')
   })
 })

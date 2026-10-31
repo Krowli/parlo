@@ -4,6 +4,7 @@ import { colleagueEnv } from './identity'
 import { firstPrompt } from './preamble'
 import { runColleague } from './run-colleague'
 import { runnerFor } from './runners'
+import { stopUnder } from './stop'
 import type { Db } from './store/db'
 import { runPlan } from './store/reads'
 import { threads } from './store/schema'
@@ -44,6 +45,9 @@ export async function driveThread(db: Db, threadId: number, turn: number, onProg
     },
     { deadlineMs: plan.deadlineAt.getTime() - Date.now(), env: colleagueEnv(), signal },
   )
+  if (outcome.kind === 'stopped' || outcome.kind === 'timeout') {
+    stopUnder(db, threadId)
+  }
   finishThread(db, threadId, outcome, new Date())
   return true
 }
