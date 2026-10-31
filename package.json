@@ -2,6 +2,18 @@
   "name": "parlo",
   "version": "0.1.0",
   "description": "Your coding agents ask each other for help: Claude Code asks Codex, Codex asks Claude Code.",
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "multi-agent",
+    "agent-collaboration",
+    "claude-code",
+    "codex",
+    "cli",
+    "llm",
+    "developer-tools",
+    "sqlite"
+  ],
   "type": "module",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Krowli",
@@ -38,7 +50,8 @@
     "typecheck": "tsc --noEmit",
     "generate": "drizzle-kit generate",
     "parlo": "tsx src/cli/index.ts",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
