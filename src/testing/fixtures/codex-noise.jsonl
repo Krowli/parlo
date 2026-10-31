@@ -1,0 +1,4 @@
+warning: an MCP server failed to start
+{"type":"thread.started","thread_id":"0f000000-0000-4000-8000-000000000002"}
+{"type":"turn.started"}
+{"type":"turn.completed","usage":{"input_tokens":1,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0}}

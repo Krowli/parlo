@@ -1,0 +1,60 @@
+{
+  "name": "parlo",
+  "version": "0.1.0",
+  "description": "Your coding agents ask each other for help: Claude Code asks Codex, Codex asks Claude Code.",
+  "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Krowli",
+  "homepage": "https://parlo.aioomi.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Krowli/parlo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Krowli/parlo/issues"
+  },
+  "bin": {
+    "parlo": "bin/parlo.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "drizzle",
+    "skills",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.11.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "parlo": "tsx src/cli/index.ts",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "commander": "^15.0.0",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.316",
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@openai/codex-sdk": "^0.166.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^22.20.5",
+    "drizzle-kit": "^0.31.11",
+    "tsdown": "^0.23.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
