@@ -86,3 +86,17 @@ describe('parlo threads and show', () => {
     expect((await parlo('threads')).stdout).toBe('parlo: no threads yet.\n')
   })
 })
+
+describe('parlo ask claude', () => {
+  it('asks Claude and records the cwd its init event reports', async () => {
+    const fake = fakeCli('claude', [{ stdout: fixture('claude-reply.jsonl') }])
+    const home = mkdtempSync(join(tmpdir(), 'parlo-home-'))
+    const cwd = realpathSync(mkdtempSync(join(tmpdir(), 'parlo-work-')))
+    const env = testEnv({ PATH: testPath(fake.binDir), PARLO_HOME: home, CODEX_THREAD_ID: 'codex-root' })
+    const result = await runCli(['ask', 'claude', 'q'], env, cwd)
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain('parlo: claude answered on thread 1.')
+    expect(fake.calls()[0].argv).toEqual(['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'plan'])
+    expect(fake.calls()[0].stdin).toContain('(Codex)')
+  })
+})

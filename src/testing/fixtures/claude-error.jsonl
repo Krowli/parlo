@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","cwd":"/w","session_id":"2e61bfe8-29fa-4e3a-ac28-a441f1c674d6","tools":[],"model":"claude-opus-5-5","permissionMode":"plan","apiKeySource":"none","uuid":"00000000-0000-4000-8000-000000000006"}
+{"type":"result","subtype":"error_max_turns","is_error":true,"duration_ms":1000,"duration_api_ms":900,"num_turns":50,"session_id":"2e61bfe8-29fa-4e3a-ac28-a441f1c674d6","uuid":"00000000-0000-4000-8000-000000000007"}
