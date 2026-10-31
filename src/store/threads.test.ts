@@ -11,6 +11,7 @@ import type { CallerKey } from '../identity'
 import { isAlive } from '../process'
 import type { Db } from './db'
 import { openStore, type OpenStore } from './open'
+import { runningSubtree } from './reads'
 import { agents, messages, threads } from './schema'
 import { type AskInput, beginAsk, finishThread, markStopped, reapDeadRunners, recordSession } from './threads'
 
@@ -153,5 +154,26 @@ describe('finishThread and reaping', () => {
     const { threadId } = beginAsk(db, input({ runnerPid: dead.pid! }))
     reapDeadRunners(db)
     expect(db.select().from(threads).where(eq(threads.id, threadId)).get()).toMatchObject({ status: 'failed', failure: 'parlo stopped before the colleague answered' })
+  })
+})
+
+describe('runningSubtree', () => {
+  it('includes the threads a colleague started', () => {
+    const first = beginAsk(db, input())
+    const colleague = colleagueAsCaller(first.threadId, 'cx-1')
+    const second = beginAsk(db, input({ caller: colleague }))
+    beginAsk(db, input()) // a sibling thread of the root: not under thread 1
+    expect(runningSubtree(db, first.threadId).map(t => t.id)).toEqual([first.threadId, second.threadId])
+  })
+
+  it('stops the colleague a dead runner left behind', async () => {
+    const orphan = spawn('sleep', ['30'], { detached: true })
+    const dead = spawn(process.execPath, ['-e', ''])
+    await new Promise(resolve => dead.on('exit', resolve))
+    const { threadId } = beginAsk(db, input({ runnerPid: dead.pid! }))
+    db.update(threads).set({ colleaguePid: orphan.pid! }).where(eq(threads.id, threadId)).run()
+    reapDeadRunners(db)
+    await new Promise(resolve => orphan.on('exit', resolve))
+    expect(isAlive(orphan.pid!)).toBe(false)
   })
 })

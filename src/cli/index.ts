@@ -7,6 +7,7 @@ import { packagePath } from '../package-path'
 import type { Access, ColleagueVendor } from '../runners/types'
 import { ask } from './commands/ask'
 import { showCommand } from './commands/show'
+import { stopCommand } from './commands/stop'
 import { threadsCommand } from './commands/threads'
 
 const { version } = JSON.parse(readFileSync(packagePath('package.json'), 'utf8')) as { version: string }
@@ -53,6 +54,15 @@ function buildProgram(): Command {
     .description('Print a whole thread.')
     .argument('<thread>', 'the thread number', threadArgument)
     .action((threadId: number) => { process.exitCode = showCommand(threadId) })
+
+  program.command('stop')
+    .description('Stop a thread and everything under it, or every running thread.')
+    .addOption(new Option('--thread <id>', 'the thread to stop').argParser(threadArgument).conflicts('all'))
+    .option('--all', 'stop every running thread')
+    .action((flags: { thread?: number; all?: boolean }) => {
+      if (flags.thread === undefined && !flags.all) throw new ParloError('parlo: say which: --thread <id> or --all', EXIT.usage)
+      process.exitCode = stopCommand(flags.thread === undefined ? { all: true } : { thread: flags.thread })
+    })
 
   return program
 }
