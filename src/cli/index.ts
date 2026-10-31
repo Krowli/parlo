@@ -6,12 +6,20 @@ import { EXIT, ParloError } from '../errors'
 import { packagePath } from '../package-path'
 import type { Access, ColleagueVendor } from '../runners/types'
 import { ask } from './commands/ask'
+import { showCommand } from './commands/show'
+import { threadsCommand } from './commands/threads'
 
 const { version } = JSON.parse(readFileSync(packagePath('package.json'), 'utf8')) as { version: string }
 
 function colleagueArgument(value: string): ColleagueVendor {
   if (value === 'claude' || value === 'codex') return value
   throw new InvalidArgumentError('the colleague is claude or codex')
+}
+
+function threadArgument(value: string): number {
+  const id = Number(value)
+  if (!Number.isInteger(id) || id < 1) throw new InvalidArgumentError('a thread is a positive number')
+  return id
 }
 
 function accessOf(flags: { write?: boolean; worktree?: boolean }): Access | null {
@@ -30,11 +38,21 @@ function buildProgram(): Command {
     .description('Ask a colleague and print its reply.')
     .argument('<colleague>', 'claude or codex', colleagueArgument)
     .argument('<message...>', 'what to ask; the colleague sees nothing else')
+    .option('--thread <id>', 'continue a thread you started', threadArgument)
     .addOption(new Option('--write', 'let the colleague change files in this directory').conflicts('worktree'))
     .option('--worktree', 'let the colleague change files in its own git worktree')
-    .action(async (colleague: ColleagueVendor, words: string[], flags: { write?: boolean; worktree?: boolean }) => {
-      process.exitCode = await ask(colleague, words.join(' '), { access: accessOf(flags) ?? 'read' })
+    .action(async (colleague: ColleagueVendor, words: string[], flags: { thread?: number; write?: boolean; worktree?: boolean }) => {
+      process.exitCode = await ask(colleague, words.join(' '), { thread: flags.thread ?? null, access: accessOf(flags) })
     })
+
+  program.command('threads')
+    .description('List the threads in this agent tree.')
+    .action(() => { process.exitCode = threadsCommand() })
+
+  program.command('show')
+    .description('Print a whole thread.')
+    .argument('<thread>', 'the thread number', threadArgument)
+    .action((threadId: number) => { process.exitCode = showCommand(threadId) })
 
   return program
 }
