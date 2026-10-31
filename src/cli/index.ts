@@ -7,10 +7,12 @@ import { packagePath } from '../package-path'
 import type { Access, ColleagueVendor } from '../runners/types'
 import { ask } from './commands/ask'
 import { connectCommand, disconnectCommand } from './commands/connect'
+import { runCommand } from './commands/run'
 import { showCommand } from './commands/show'
 import { stopCommand } from './commands/stop'
 import { threadsCommand } from './commands/threads'
 import { uninstallCommand } from './commands/uninstall'
+import { waitCommand } from './commands/wait'
 
 const { version } = JSON.parse(readFileSync(packagePath('package.json'), 'utf8')) as { version: string }
 
@@ -44,9 +46,22 @@ function buildProgram(): Command {
     .option('--thread <id>', 'continue a thread you started', threadArgument)
     .addOption(new Option('--write', 'let the colleague change files in this directory').conflicts('worktree'))
     .option('--worktree', 'let the colleague change files in its own git worktree')
-    .action(async (colleague: ColleagueVendor, words: string[], flags: { thread?: number; write?: boolean; worktree?: boolean }) => {
-      process.exitCode = await ask(colleague, words.join(' '), { thread: flags.thread ?? null, access: accessOf(flags) })
+    .option('--detach', 'start the colleague and return at once; get the reply with parlo wait')
+    .action(async (colleague: ColleagueVendor, words: string[], flags: { thread?: number; write?: boolean; worktree?: boolean; detach?: boolean }) => {
+      process.exitCode = await ask(colleague, words.join(' '), { thread: flags.thread ?? null, access: accessOf(flags), detach: flags.detach === true })
     })
+
+  program.command('wait')
+    .description('Wait for a thread\'s reply (exit 4 if it is still working).')
+    .argument('<thread>', 'the thread number', threadArgument)
+    .option('--timeout <seconds>', 'how long to wait', value => Number(value), 25)
+    .action(async (threadId: number, flags: { timeout: number }) => {
+      process.exitCode = await waitCommand(threadId, flags.timeout)
+    })
+
+  program.command('__run', { hidden: true })
+    .argument('<thread>', 'the thread number', threadArgument)
+    .action(async (threadId: number) => { process.exitCode = await runCommand(threadId) })
 
   program.command('threads')
     .description('List the threads in this agent tree.')
