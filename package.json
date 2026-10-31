@@ -1,7 +1,7 @@
 {
   "name": "parlo",
   "version": "0.1.0",
-  "description": "Your coding agents ask each other for help: Claude Code asks Codex, Codex asks Claude Code.",
+  "description": "Your coding agents talk to each other: Claude Code and Codex work a problem out together, in threads, in both directions.",
   "keywords": [
     "ai-agents",
     "coding-agents",

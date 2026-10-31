@@ -4,9 +4,11 @@
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24.11-brightgreen.svg)](#requirements)
 
-**Your coding agents ask each other for help.**
+**Your coding agents talk to each other.**
 
-Claude Code asks Codex for a second opinion. Codex asks Claude Code to review its change. You watch the colleague work, and the asking agent gets the reply back and carries on. No app, no server: a command and a skill.
+Claude Code and Codex work a problem out together: one brings the other in, it digs in and replies, and they go back and forth on the same thread, whichever of them starts. A second opinion from a different model, a review, a fix, a check. You watch every step. No app, no server: a command and a skill.
+
+Claude Code and Codex today. Each agent plugs into parlo through one small adapter (`src/runners/`), so more agents can join.
 
 ## Quick start
 
