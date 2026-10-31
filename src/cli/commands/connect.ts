@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -10,11 +11,57 @@ import type { ColleagueVendor } from '../../runners/types'
 /** Spike result 4: lets Codex run parlo outside its sandbox, which has no network and can't write ~/.parlo. */
 const RULE_HEADER = '# Written by `parlo connect codex`'
 
-const CODEX_RULE = `${RULE_HEADER}; removed by \`parlo disconnect codex\`.
-# Lets Codex run parlo outside its sandbox, so parlo can write ~/.parlo and
-# the colleague it starts can reach its API.
-prefix_rule(pattern = ["parlo"], decision = "allow")
+function codexRule(command: string[]): string {
+  const lines = [
+    `${RULE_HEADER}; removed by \`parlo disconnect codex\`.`,
+    '# Lets Codex run parlo outside its sandbox, so parlo can write ~/.parlo and',
+    '# the colleague it starts can reach its API.',
+    'prefix_rule(pattern = ["parlo"], decision = "allow")',
+  ]
+  if (command.length > 1) {
+    lines.push(`prefix_rule(pattern = ${JSON.stringify(command)}, decision = "allow")`)
+  }
+  return `${lines.join('\n')}\n`
+}
+
+/**
+ * How an agent's shell can start parlo. Agents run commands in a login shell
+ * that builds its own PATH, and that PATH may not hold npm's global bin folder
+ * (it didn't on the owner's Mac: Codex answered "command not found: parlo").
+ * Checked with a clean environment, the way an agent app starts its shell.
+ * When the login shell doesn't find `parlo`, agents get the full way to start
+ * it: this Node and this package's own bin.
+ */
+export function agentCommand(): string[] {
+  const shell = process.env.SHELL ?? '/bin/sh'
+  const clean = { HOME: homedir(), USER: process.env.USER ?? '', LOGNAME: process.env.LOGNAME ?? '', SHELL: shell }
+  const found = spawnSync(shell, ['-lc', 'command -v parlo'], { env: clean, encoding: 'utf8' })
+  return found.status === 0 && found.stdout.trim() !== '' ? ['parlo'] : [process.execPath, packagePath('bin', 'parlo.mjs')]
+}
+
+function shellWord(word: string): string {
+  return /^[\w./-]+$/.test(word) ? word : `'${word.replaceAll("'", "'\\''")}'`
+}
+
+/** The skill, plus, when agents can't find `parlo` on their PATH, how to start it on this machine. */
+function skillFor(command: string[]): string {
+  const skill = readFileSync(packagePath('skills', 'parlo', 'SKILL.md'), 'utf8')
+  if (command.length === 1) return skill
+  const run = command.map(shellWord).join(' ')
+  return `${skill}
+## Running parlo on this machine
+
+The shell your commands run in doesn't find \`parlo\` on its PATH, so
+\`parlo connect\` wrote down how to start it here. Wherever this skill says
+\`parlo\`, run \`${run}\` instead. For example:
+
+\`\`\`bash
+${run} threads
+\`\`\`
+
+If that stops working (Node or parlo moved), the person runs \`parlo connect\` again.
 `
+}
 
 export interface Install {
   path: string
@@ -28,8 +75,8 @@ export interface Install {
 const isParloSkill = (existing: string) => /^name: parlo$/m.test(existing)
 const isParloRule = (existing: string) => existing.startsWith(RULE_HEADER)
 
-export function installsFor(agent: ColleagueVendor): Install[] {
-  const skill = readFileSync(packagePath('skills', 'parlo', 'SKILL.md'), 'utf8')
+export function installsFor(agent: ColleagueVendor, command: string[] = ['parlo']): Install[] {
+  const skill = skillFor(command)
   if (agent === 'claude') {
     const folder = join(homedir(), '.claude', 'skills', 'parlo')
     return [{ path: join(folder, 'SKILL.md'), content: skill, removes: folder, isOurs: isParloSkill }]
@@ -38,7 +85,7 @@ export function installsFor(agent: ColleagueVendor): Install[] {
   const rule = join(process.env.CODEX_HOME ?? join(homedir(), '.codex'), 'rules', 'parlo.rules')
   return [
     { path: join(folder, 'SKILL.md'), content: skill, removes: folder, isOurs: isParloSkill },
-    { path: rule, content: CODEX_RULE, removes: rule, isOurs: isParloRule },
+    { path: rule, content: codexRule(command), removes: rule, isOurs: isParloRule },
   ]
 }
 
@@ -57,7 +104,11 @@ export async function confirm(question: string): Promise<boolean> {
 }
 
 export async function connectCommand(agent: ColleagueVendor, flags: { yes: boolean }): Promise<ExitCode> {
-  const changes = installsFor(agent).map(install => ({
+  const command = agentCommand()
+  if (command.length > 1) {
+    process.stdout.write(`parlo: agents on this machine can't find \`parlo\` on their PATH, so the skill${agent === 'codex' ? ' and the rule' : ''} will name it in full: ${command.map(shellWord).join(' ')}\n`)
+  }
+  const changes = installsFor(agent, command).map(install => ({
     ...install,
     state: !existsSync(install.path) ? 'create' : readFileSync(install.path, 'utf8') === install.content ? 'unchanged' : 'update',
   }))

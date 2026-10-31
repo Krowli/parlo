@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -10,9 +10,17 @@ import { runCli } from '../testing/run-cli'
 
 const skill = readFileSync(packagePath('skills/parlo/SKILL.md'), 'utf8')
 
-function home() {
+/** A stand-in for the user's login shell: one that finds `parlo` on its PATH, or one that doesn't. */
+function loginShell(findsParlo: boolean): string {
+  const file = join(mkdtempSync(join(tmpdir(), 'parlo-shell-')), 'sh')
+  writeFileSync(file, findsParlo ? '#!/bin/sh\necho /usr/local/bin/parlo\n' : '#!/bin/sh\nexit 1\n')
+  chmodSync(file, 0o755)
+  return file
+}
+
+function home(findsParlo = true) {
   const dir = mkdtempSync(join(tmpdir(), 'parlo-user-'))
-  const env = testEnv({ HOME: dir, PARLO_HOME: join(dir, '.parlo') })
+  const env = testEnv({ HOME: dir, PARLO_HOME: join(dir, '.parlo'), SHELL: loginShell(findsParlo) })
   delete env.CODEX_HOME // the developer's own Codex home must not be touched
   return { dir, env }
 }
@@ -74,5 +82,29 @@ describe('removing only what parlo wrote', () => {
     }
     expect(existsSync(join(dir, '.codex/rules/parlo.rules'))).toBe(true)
     expect(existsSync(join(dir, '.agents/skills/parlo/SKILL.md'))).toBe(true)
+  })
+})
+
+describe('when an agent\'s login shell does not find parlo', () => {
+  const bin = packagePath('bin', 'parlo.mjs')
+
+  it('writes the full way to start parlo into the skill and the Codex rule', async () => {
+    const { dir, env } = home(false)
+    const result = await runCli(['connect', 'codex', '--yes'], env)
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain('agents on this machine can\'t find `parlo` on their PATH')
+    const installed = readFileSync(join(dir, '.agents/skills/parlo/SKILL.md'), 'utf8')
+    expect(installed.startsWith(skill)).toBe(true)
+    expect(installed).toContain(`run \`${process.execPath} ${bin}\` instead`)
+    const rule = readFileSync(join(dir, '.codex/rules/parlo.rules'), 'utf8')
+    expect(rule).toContain('prefix_rule(pattern = ["parlo"], decision = "allow")')
+    expect(rule).toContain(`prefix_rule(pattern = ${JSON.stringify([process.execPath, bin])}, decision = "allow")`)
+  })
+
+  it('keeps the plain skill and rule when the login shell finds parlo', async () => {
+    const { dir, env } = home(true)
+    await runCli(['connect', 'codex', '--yes'], env)
+    expect(readFileSync(join(dir, '.agents/skills/parlo/SKILL.md'), 'utf8')).toBe(skill)
+    expect(readFileSync(join(dir, '.codex/rules/parlo.rules'), 'utf8')).not.toContain(bin)
   })
 })
