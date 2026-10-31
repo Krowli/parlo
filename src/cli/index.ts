@@ -6,9 +6,11 @@ import { EXIT, ParloError } from '../errors'
 import { packagePath } from '../package-path'
 import type { Access, ColleagueVendor } from '../runners/types'
 import { ask } from './commands/ask'
+import { connectCommand, disconnectCommand } from './commands/connect'
 import { showCommand } from './commands/show'
 import { stopCommand } from './commands/stop'
 import { threadsCommand } from './commands/threads'
+import { uninstallCommand } from './commands/uninstall'
 
 const { version } = JSON.parse(readFileSync(packagePath('package.json'), 'utf8')) as { version: string }
 
@@ -62,6 +64,27 @@ function buildProgram(): Command {
     .action((flags: { thread?: number; all?: boolean }) => {
       if (flags.thread === undefined && !flags.all) throw new ParloError('parlo: say which: --thread <id> or --all', EXIT.usage)
       process.exitCode = stopCommand(flags.thread === undefined ? { all: true } : { thread: flags.thread })
+    })
+
+  program.command('connect')
+    .description('Install the parlo skill into an agent (and, for Codex, the rule that lets parlo run outside its sandbox).')
+    .argument('<agent>', 'claude or codex', colleagueArgument)
+    .option('--yes', 'apply without asking')
+    .action(async (agent: ColleagueVendor, flags: { yes?: boolean }) => {
+      process.exitCode = await connectCommand(agent, { yes: flags.yes === true })
+    })
+
+  program.command('disconnect')
+    .description('Remove what parlo connect installed.')
+    .argument('<agent>', 'claude or codex', colleagueArgument)
+    .action((agent: ColleagueVendor) => { process.exitCode = disconnectCommand(agent) })
+
+  program.command('uninstall')
+    .description('Stop every colleague and remove what parlo installed; then run npm uninstall -g parlo.')
+    .option('--yes', 'remove without asking')
+    .option('--purge', 'also delete ~/.parlo (asks in a terminal; --yes does not answer it)')
+    .action(async (flags: { yes?: boolean; purge?: boolean }) => {
+      process.exitCode = await uninstallCommand({ yes: flags.yes === true, purge: flags.purge === true })
     })
 
   return program
