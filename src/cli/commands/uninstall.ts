@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { EXIT, type ExitCode } from '../../errors'
 import { parloHome } from '../../store/home'
 import { openStore } from '../../store/open'
-import { confirm, installsFor, tildify } from './connect'
+import { confirm, installsFor, removable, reportSkipped, tildify } from './connect'
 import { stopTargets } from '../../stop'
 
 const LAST_STEP = 'Last step: npm uninstall -g parlo'
@@ -17,7 +17,8 @@ const LAST_STEP = 'Last step: npm uninstall -g parlo'
 export async function uninstallCommand(flags: { yes: boolean; purge: boolean }): Promise<ExitCode> {
   const home = parloHome()
   const hasStore = existsSync(join(home, 'parlo.db'))
-  const installs = (['claude', 'codex'] as const).flatMap(agent => installsFor(agent)).filter(install => existsSync(install.removes))
+  const { ours: installs, theirs } = removable((['claude', 'codex'] as const).flatMap(agent => installsFor(agent)))
+  reportSkipped(theirs)
   if (installs.length === 0 && !hasStore) {
     process.stdout.write(`parlo: nothing to remove. ${LAST_STEP}\n`)
     return EXIT.ok

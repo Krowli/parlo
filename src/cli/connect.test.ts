@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -56,5 +56,23 @@ describe('parlo connect', () => {
     expect(result.code).toBe(0)
     expect(existsSync(join(dir, '.agents/skills/parlo'))).toBe(false)
     expect(existsSync(join(dir, '.codex/rules/parlo.rules'))).toBe(false)
+  })
+})
+
+describe('removing only what parlo wrote', () => {
+  it('keeps a rule file and a skill folder that parlo did not write', async () => {
+    const { dir, env } = home()
+    mkdirSync(join(dir, '.codex/rules'), { recursive: true })
+    writeFileSync(join(dir, '.codex/rules/parlo.rules'), 'prefix_rule(pattern = ["parlo", "--yes"], decision = "allow")\n')
+    mkdirSync(join(dir, '.agents/skills/parlo'), { recursive: true })
+    writeFileSync(join(dir, '.agents/skills/parlo/SKILL.md'), '---\nname: parlo-notes\ndescription: someone else\n---\n')
+    for (const command of [['disconnect', 'codex'], ['uninstall', '--yes']]) {
+      const result = await runCli(command, env)
+      expect(result.code).toBe(0)
+      expect(result.stdout).toContain('skipped   ~/.codex/rules/parlo.rules (not written by parlo')
+      expect(result.stdout).toContain('skipped   ~/.agents/skills/parlo (not written by parlo')
+    }
+    expect(existsSync(join(dir, '.codex/rules/parlo.rules'))).toBe(true)
+    expect(existsSync(join(dir, '.agents/skills/parlo/SKILL.md'))).toBe(true)
   })
 })
