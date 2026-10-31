@@ -1,10 +1,16 @@
-/** Signal a colleague and everything it started: it runs as the leader of its own process group. */
+/**
+ * Signal a colleague and everything it started: it runs as the leader of its own process group.
+ * A group that is already gone answers ESRCH; one whose processes have exited but are not yet
+ * reaped answers EPERM on macOS (Claude Code stopping a task kills the group before parlo's own
+ * SIGTERM handler runs). Either way there is nothing left to stop.
+ */
 export function killGroup(pid: number): void {
   try {
     process.kill(-pid, 'SIGTERM')
   }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code !== 'ESRCH' && code !== 'EPERM') {
       throw error
     }
   }
