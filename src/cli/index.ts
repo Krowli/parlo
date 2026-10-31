@@ -61,7 +61,8 @@ function buildProgram(): Command {
 
   program.command('__run', { hidden: true })
     .argument('<thread>', 'the thread number', threadArgument)
-    .action(async (threadId: number) => { process.exitCode = await runCommand(threadId) })
+    .argument('<turn>', 'the ask this runner answers', threadArgument)
+    .action(async (threadId: number, turn: number) => { process.exitCode = await runCommand(threadId, turn) })
 
   program.command('threads')
     .description('List the threads in this agent tree.')

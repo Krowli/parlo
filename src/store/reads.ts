@@ -65,6 +65,9 @@ export interface RunPlan {
   cwd: string
   /** The ask this turn answers: the caller's latest message. */
   body: string
+  /** That message's id: the turn now due. */
+  turn: number
+  status: ThreadStatus
   deadlineAt: Date
 }
 
@@ -85,6 +88,8 @@ export function runPlan(db: Db, threadId: number): RunPlan {
     access: thread.access,
     cwd: colleague.cwd,
     body: ask.body,
+    turn: ask.id,
+    status: thread.status,
     deadlineAt: thread.deadlineAt,
   }
 }

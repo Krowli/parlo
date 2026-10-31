@@ -24,6 +24,8 @@ export interface AskInput {
 export interface StartedAsk {
   threadId: number
   access: Access
+  /** The ask just recorded: the turn a runner may run, and only that one. */
+  messageId: number
 }
 
 const refuse = (message: string) => new ParloError(message, EXIT.refused)
@@ -84,8 +86,8 @@ function startThread(db: Db, caller: Agent, input: AskInput): StartedAsk {
     callerId: caller.id, colleagueId: colleague.id, access, status: 'running', failure: null,
     runnerPid: input.runnerPid, colleaguePid: null, deadlineAt: deadline(input.now), createdAt: input.now,
   }).returning().get()
-  db.insert(messages).values({ threadId: thread.id, fromId: caller.id, toId: colleague.id, body: input.body, createdAt: input.now }).run()
-  return { threadId: thread.id, access }
+  const ask = db.insert(messages).values({ threadId: thread.id, fromId: caller.id, toId: colleague.id, body: input.body, createdAt: input.now }).returning().get()
+  return { threadId: thread.id, access, messageId: ask.id }
 }
 
 function continueThread(db: Db, caller: Agent, threadId: number, input: AskInput): StartedAsk {
@@ -119,8 +121,8 @@ function continueThread(db: Db, caller: Agent, threadId: number, input: AskInput
   db.update(threads)
     .set({ status: 'running', failure: null, runnerPid: input.runnerPid, colleaguePid: null, deadlineAt: deadline(input.now) })
     .where(eq(threads.id, threadId)).run()
-  db.insert(messages).values({ threadId, fromId: caller.id, toId: colleague.id, body: input.body, createdAt: input.now }).run()
-  return { threadId, access: thread.access }
+  const ask = db.insert(messages).values({ threadId, fromId: caller.id, toId: colleague.id, body: input.body, createdAt: input.now }).returning().get()
+  return { threadId, access: thread.access, messageId: ask.id }
 }
 
 export function recordSession(db: Db, agentId: number, sessionId: string, cwd?: string): void {

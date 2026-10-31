@@ -30,7 +30,7 @@ export async function ask(vendor: ColleagueVendor, message: string, flags: AskFl
       mkdirSync(logs, { recursive: true })
       const log = openSync(join(logs, `${started.threadId}.log`), 'a')
       // The same parlo, run again: `process.argv[1]` is bin/parlo.mjs once installed, or the tsx entry in tests.
-      const runner = spawn(process.execPath, [...process.execArgv, process.argv[1], '__run', String(started.threadId)], {
+      const runner = spawn(process.execPath, [...process.execArgv, process.argv[1], '__run', String(started.threadId), String(started.messageId)], {
         detached: true, stdio: ['ignore', log, log], env: process.env,
       })
       // Record the runner before this process exits, so reaping never sees a dead pid in between.
@@ -40,7 +40,7 @@ export async function ask(vendor: ColleagueVendor, message: string, flags: AskFl
       return EXIT.ok
     }
     process.stderr.write(`parlo: thread ${started.threadId} — asking ${vendor} (${ACCESS_LABEL[started.access]})\n`)
-    await driveThread(db, started.threadId, line => process.stderr.write(`${line}\n`), abortOnSignals())
+    await driveThread(db, started.threadId, started.messageId, line => process.stderr.write(`${line}\n`), abortOnSignals())
     return reportThread(db, started.threadId)
   }
   finally {

@@ -51,7 +51,7 @@ function colleagueAsCaller(threadId: number, sessionId: string): CallerKey {
 describe('beginAsk: a new thread', () => {
   it('records the root, the colleague, the thread and the ask', () => {
     const started = beginAsk(db, input())
-    expect(started).toEqual({ threadId: 1, access: 'read' })
+    expect(started).toMatchObject({ threadId: 1, access: 'read' })
     const all = db.select().from(agents).all()
     expect(all.map(a => [a.vendor, a.depth, a.parentId, a.rootId])).toEqual([['claude', 0, null, null], ['codex', 1, 1, 1]])
     expect(db.select().from(threads).get()).toMatchObject({ callerId: 1, colleagueId: 2, status: 'running', access: 'read', runnerPid: process.pid })
@@ -94,7 +94,7 @@ describe('beginAsk: a follow-up', () => {
 
   it('continues an answered thread', () => {
     const threadId = answeredThread()
-    expect(beginAsk(db, input({ threadId, body: 'and then?' }))).toEqual({ threadId, access: 'read' })
+    expect(beginAsk(db, input({ threadId, body: 'and then?' }))).toMatchObject({ threadId, access: 'read' })
     expect(db.select().from(threads).where(eq(threads.id, threadId)).get()!.status).toBe('running')
   })
 
