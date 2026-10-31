@@ -103,6 +103,8 @@ For `--worktree`, parlo makes the worktree itself, in `~/.parlo/worktrees/<threa
 
 A Codex shell command times out long before a colleague is done, so Codex uses `parlo ask --detach` and then `parlo wait <thread>` until the reply arrives. A detached colleague's steps go to `~/.parlo/logs/<thread>.log`.
 
+The rule matches only a command that starts with `parlo`. So in Codex the skill gives the message as one argument (`parlo ask --detach claude -- '…'`) instead of a heredoc or a pipe: those would stay in the sandbox, where a heredoc can't even be created.
+
 ## Requirements
 
 - macOS or Linux.
@@ -113,6 +115,7 @@ A Codex shell command times out long before a colleague is done, so Codex uses `
 ## Troubleshooting
 
 - **`codex is not installed or not on PATH`** (or `claude`): install that CLI, or make sure the shell that runs parlo finds it.
+- **An agent says `command not found: parlo`**: npm put `parlo` in `$(npm prefix -g)/bin`, and the agent's shell doesn't have that folder on its PATH. Agents run commands in a login shell, so add it in `~/.zprofile` (zsh) or `~/.bash_profile` (bash): `export PATH="$(npm prefix -g)/bin:$PATH"`, using the folder `npm prefix -g` prints. Check with `zsh -lc 'command -v parlo'`.
 - **A colleague fails right away with a login message**: run `codex` or `claude` once yourself and log in.
 - **`npm install -g parlo` fails on better-sqlite3**: that's the native SQLite module parlo stores threads with. It comes prebuilt for macOS and Linux on x64 and arm64; if the install still tries to compile it, switch to a supported Node version (see [Requirements](#requirements)) and install again.
 - **What is a detached colleague doing?** `tail -f ~/.parlo/logs/<thread>.log`.

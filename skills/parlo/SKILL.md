@@ -9,8 +9,9 @@ description: Ask another coding agent (Claude Code or Codex) for a second opinio
 your message, and prints its reply. The colleague sees nothing of your
 conversation, only the message.
 
-Always pass the message on stdin with `-`, in a quoted heredoc. The shell then
-changes nothing in it (`$`, backticks, quotes), and it may start with `-`:
+In Claude Code, pass the message on stdin with `-`, in a quoted heredoc. The
+shell then changes nothing in it (`$`, backticks, quotes), and it may start
+with `-`:
 
 ```bash
 parlo ask codex - <<'PARLO'
@@ -26,16 +27,25 @@ PARLO
 When you are told it finished, read its output. The first line names the
 thread, and the reply is between `----- reply -----` and `----- end -----`.
 
-**In Codex:** run `parlo ask --detach <claude|codex> - <<'PARLO'` (the message,
-then `PARLO`). It prints a thread number at once. Then run `parlo wait <thread>`
-until it exits 0 with the reply. Exit code 4 means still working: run
-`parlo wait <thread>` again.
+**In Codex:** run one command that starts with `parlo` and give the message
+as a single argument after `--`:
+
+```bash
+parlo ask --detach claude -- 'Review src/limits.ts. Answer with a verdict and the lines that matter.'
+```
+
+No heredoc, no pipe, no `bash -c` around it: Codex lets only a command that
+starts with `parlo` out of its sandbox, and inside the sandbox a heredoc
+can't even be created. It prints a thread number at once. Then run
+`parlo wait <thread>` until it exits 0 with the reply. Exit code 4 means
+still working: run `parlo wait <thread>` again.
 
 ## Continue the conversation
 
-`parlo ask codex --thread 12 - <<'PARLO'` (the follow-up, then `PARLO`)
-continues thread 12 with the same colleague, which remembers the thread. Only
-you, the agent that started it, can continue it.
+`parlo ask codex --thread 12 - <<'PARLO'` (the follow-up, then `PARLO`; in
+Codex: `parlo ask --detach claude --thread 12 -- '<follow-up>'`) continues
+thread 12 with the same colleague, which remembers the thread. Only you, the
+agent that started it, can continue it.
 
 ## What the colleague may do
 
