@@ -27,6 +27,25 @@ function threadArgument(value: string): number {
   return id
 }
 
+/**
+ * The message: the words after the colleague, or stdin with `-` (or with no
+ * words and stdin piped in). Stdin is the form the skill teaches, in a quoted
+ * heredoc: the shell expands nothing, and a message may start with `-`.
+ */
+async function messageOf(words: string[]): Promise<string> {
+  const fromStdin = (words.length === 1 && words[0] === '-') || (words.length === 0 && !process.stdin.isTTY)
+  let message = words.join(' ')
+  if (fromStdin) {
+    const chunks: Buffer[] = []
+    for await (const chunk of process.stdin) chunks.push(chunk as Buffer)
+    message = Buffer.concat(chunks).toString('utf8')
+  }
+  if (message.trim() === '') {
+    throw new ParloError('parlo: say what to ask: parlo ask codex "<message>", or pipe it in: parlo ask codex - <<\'PARLO\' … PARLO', EXIT.usage)
+  }
+  return message
+}
+
 function accessOf(flags: { write?: boolean; worktree?: boolean }): Access | null {
   if (flags.worktree) return 'worktree'
   if (flags.write) return 'write'
@@ -42,13 +61,13 @@ function buildProgram(): Command {
   program.command('ask')
     .description('Ask a colleague and print its reply.')
     .argument('<colleague>', 'claude or codex', colleagueArgument)
-    .argument('<message...>', 'what to ask; the colleague sees nothing else')
+    .argument('[message...]', 'what to ask; the colleague sees nothing else. Use - to read it from stdin')
     .option('--thread <id>', 'continue a thread you started', threadArgument)
     .addOption(new Option('--write', 'let the colleague change files in this directory').conflicts('worktree'))
     .option('--worktree', 'let the colleague change files in its own git worktree')
     .option('--detach', 'start the colleague and return at once; get the reply with parlo wait')
     .action(async (colleague: ColleagueVendor, words: string[], flags: { thread?: number; write?: boolean; worktree?: boolean; detach?: boolean }) => {
-      process.exitCode = await ask(colleague, words.join(' '), { thread: flags.thread ?? null, access: accessOf(flags), detach: flags.detach === true })
+      process.exitCode = await ask(colleague, await messageOf(words), { thread: flags.thread ?? null, access: accessOf(flags), detach: flags.detach === true })
     })
 
   program.command('wait')

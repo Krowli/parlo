@@ -5,9 +5,19 @@ description: Ask another coding agent (Claude Code or Codex) for a second opinio
 
 # Asking a colleague with parlo
 
-`parlo ask <claude|codex> "<message>"` starts the other agent as your colleague,
-gives it your message, and prints its reply. The colleague sees nothing of
-your conversation, only the message.
+`parlo ask <claude|codex>` starts the other agent as your colleague, gives it
+your message, and prints its reply. The colleague sees nothing of your
+conversation, only the message.
+
+Always pass the message on stdin with `-`, in a quoted heredoc. The shell then
+changes nothing in it (`$`, backticks, quotes), and it may start with `-`:
+
+```bash
+parlo ask codex - <<'PARLO'
+Review src/limits.ts: is every limit checked in the same transaction as the insert?
+Answer with a verdict and the lines that matter.
+PARLO
+```
 
 ## Run it
 
@@ -16,15 +26,16 @@ your conversation, only the message.
 When you are told it finished, read its output. The first line names the
 thread, and the reply is between `----- reply -----` and `----- end -----`.
 
-**In Codex:** run `parlo ask --detach <claude|codex> "<message>"`. It prints a
-thread number at once. Then run `parlo wait <thread>` until it exits 0 with the
-reply. Exit code 4 means still working: run `parlo wait <thread>` again.
+**In Codex:** run `parlo ask --detach <claude|codex> - <<'PARLO'` (the message,
+then `PARLO`). It prints a thread number at once. Then run `parlo wait <thread>`
+until it exits 0 with the reply. Exit code 4 means still working: run
+`parlo wait <thread>` again.
 
 ## Continue the conversation
 
-`parlo ask codex --thread 12 "<follow-up>"` continues thread 12 with the same
-colleague, which remembers the thread. Only you, the agent that started it,
-can continue it.
+`parlo ask codex --thread 12 - <<'PARLO'` (the follow-up, then `PARLO`)
+continues thread 12 with the same colleague, which remembers the thread. Only
+you, the agent that started it, can continue it.
 
 ## What the colleague may do
 
@@ -33,7 +44,8 @@ can continue it.
 - `--worktree`: it changes files in its own git worktree, apart from yours.
 
 Use `--write` or `--worktree` only when the colleague has to change files
-and the person wants that.
+and the person wants that. If you were started read-only yourself, parlo
+refuses both.
 
 ## Write a good message
 

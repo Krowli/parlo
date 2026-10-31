@@ -45,9 +45,10 @@ Continue with: parlo ask codex --thread 1 "<message>"
 | Command | What it does |
 | --- | --- |
 | `parlo ask <claude\|codex> "<message>"` | Start a colleague, give it the message, print its reply. |
+| `parlo ask <claude\|codex> - <<'PARLO'` | The same, with the message on stdin: nothing in it is expanded, and it may start with `-`. The skill uses this form. |
 | `parlo ask … --thread <id>` | Continue a thread you started; the colleague remembers it. |
 | `parlo ask … --write` | Let the colleague change files in this directory. |
-| `parlo ask … --worktree` | Let the colleague change files in its own git worktree. |
+| `parlo ask … --worktree` | Let the colleague change files in its own git worktree (Codex: `~/.parlo/worktrees/<thread>`; Claude Code: its own `-w`). |
 | `parlo ask --detach …` | Start the colleague and return at once (for Codex as the caller). |
 | `parlo wait <thread>` | Wait up to 25 s for the reply; exit `4` means still working. |
 | `parlo threads` | List the threads in this agent tree. |
@@ -71,6 +72,7 @@ parlo enforces these limits itself. The agents can't talk their way past them.
 
 - **Read-only by default.** Codex runs with `-s read-only`, Claude Code in `plan` mode. Changing files needs `--write` or `--worktree`.
 - **No loops.** A colleague can only answer the agent that called it. It can't start a conversation with its caller, or with anyone above it.
+- **Access never widens down the tree.** A colleague asked read-only can only start read-only colleagues.
 - **Stopping is total.** Stopping `parlo ask` (from `/tasks`, Ctrl+C, or closing Claude Code) stops its colleague and every command that colleague started.
 - When a limit is hit, parlo refuses with one line the agent can act on, and exits `3`.
 
@@ -94,6 +96,10 @@ prefix_rule(pattern = ["parlo"], decision = "allow")
 ```
 
 Codex then runs `parlo`, and only `parlo`, outside the sandbox without asking. `parlo disconnect codex` removes the rule.
+
+Know what that allows: a Codex session you started read-only can still ask a colleague with `--write`, and that colleague changes files. parlo stops this for colleagues it started itself (a read-only colleague can only start read-only ones), but it can't see how you started your own Codex. Leave Codex unconnected if that matters to you.
+
+For `--worktree`, parlo makes the worktree itself, in `~/.parlo/worktrees/<thread>`, and runs Codex in it on every turn. A resumed Codex session works in the directory it is started from, so its own `--worktree` would not survive a follow-up. When you no longer need those worktrees, `git worktree prune` in your repository forgets the ones whose folders are gone.
 
 A Codex shell command times out long before a colleague is done, so Codex uses `parlo ask --detach` and then `parlo wait <thread>` until the reply arrives. A detached colleague's steps go to `~/.parlo/logs/<thread>.log`.
 

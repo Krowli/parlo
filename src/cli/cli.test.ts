@@ -100,3 +100,28 @@ describe('parlo ask claude', () => {
     expect(fake.calls()[0].stdin).toContain('(Codex)')
   })
 })
+
+describe('messages the shell would mangle', () => {
+  const tricky = '- is this right?\n- and "this", $HOME and `that`?'
+
+  it('reads the message from stdin with -, byte for byte', async () => {
+    const { fake, env, cwd } = setup()
+    const result = await runCli(['ask', 'codex', '-'], env, cwd, tricky)
+    expect(result.code).toBe(0)
+    expect(fake.calls()[0].stdin.endsWith(`--- message ---\n${tricky}`)).toBe(true)
+  })
+
+  it('takes a message that starts with a dash after --', async () => {
+    const { fake, parlo } = setup()
+    const result = await parlo('ask', 'codex', '--', '-x "quoted"')
+    expect(result.code).toBe(0)
+    expect(fake.calls()[0].stdin.endsWith('--- message ---\n-x "quoted"')).toBe(true)
+  })
+
+  it('says what to do when there is no message', async () => {
+    const { parlo } = setup()
+    const result = await parlo('ask', 'codex')
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('parlo: say what to ask')
+  })
+})

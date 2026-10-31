@@ -25,6 +25,7 @@ You will get an acknowledgement within a week. Once a fix is ready we publish it
 - **It starts Claude Code and Codex as you.** A colleague runs with your own login, settings, plugins and MCP servers, exactly as if you had started it.
 - **A colleague changes files only when asked to.** By default it is read-only: Codex runs with `-s read-only`, Claude Code in `plan` mode. `--write` lets it change files in the directory it was started in; `--worktree` lets it change files in its own git worktree.
 - **`parlo connect codex` adds one rule to Codex:** `~/.codex/rules/parlo.rules`, which lets Codex run the `parlo` command — and only that command — outside its sandbox. That is needed because the sandbox has no network and cannot write `~/.parlo`. `parlo disconnect codex` or `parlo uninstall` removes it.
+- **That rule widens what a read-only Codex can cause.** A Codex session you started read-only can ask a colleague with `--write`. parlo refuses this for colleagues it started (a read-only colleague can only start read-only ones), but it cannot see how you started your own Codex session.
 - **`~/.parlo/parlo.db` keeps every message in plain text**, protected only by file permissions. `parlo uninstall --purge` deletes it.
 
 ## Scope notes
