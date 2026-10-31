@@ -70,6 +70,13 @@ function startThread(db: Db, caller: Agent, input: AskInput): StartedAsk {
     throw refuse(`parlo: you already have ${live} colleagues working (limit ${LIMITS.maxLiveColleagues}). Wait for one to answer (parlo threads) before asking another.`)
   }
   const access = input.access ?? 'read'
+  if (access !== 'read' && caller.parentId !== null) {
+    // A colleague asked read-only must not get files changed by starting a colleague that writes.
+    const own = db.select({ access: threads.access }).from(threads).where(eq(threads.colleagueId, caller.id)).get()!
+    if (own.access === 'read') {
+      throw refuse('parlo: you were asked read-only, so a colleague you start is read-only too. Ask without --write or --worktree.')
+    }
+  }
   const colleague = db.insert(agents).values({
     vendor: input.vendor, vendorSessionId: null, parentId: caller.id, rootId: caller.rootId ?? caller.id, depth: caller.depth + 1, cwd: input.cwd, createdAt: input.now,
   }).returning().get()

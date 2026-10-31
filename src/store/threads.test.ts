@@ -177,3 +177,22 @@ describe('runningSubtree', () => {
     expect(isAlive(orphan.pid!)).toBe(false)
   })
 })
+
+describe('access never widens down the tree', () => {
+  it('a read-only colleague can only start read-only colleagues', () => {
+    const first = beginAsk(db, input())
+    const colleague = colleagueAsCaller(first.threadId, 'cx-1')
+    for (const access of ['write', 'worktree'] as const) {
+      const error = refusal(() => beginAsk(db, input({ caller: colleague, vendor: 'claude', access })))
+      expect(error.exitCode).toBe(EXIT.refused)
+      expect(error.message).toBe('parlo: you were asked read-only, so a colleague you start is read-only too. Ask without --write or --worktree.')
+    }
+    expect(beginAsk(db, input({ caller: colleague, vendor: 'claude' })).access).toBe('read')
+  })
+
+  it('a colleague that may write may start one that writes', () => {
+    const first = beginAsk(db, input({ access: 'write' }))
+    const colleague = colleagueAsCaller(first.threadId, 'cx-1')
+    expect(beginAsk(db, input({ caller: colleague, vendor: 'claude', access: 'write' })).access).toBe('write')
+  })
+})
