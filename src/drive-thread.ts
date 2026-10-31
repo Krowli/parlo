@@ -1,3 +1,5 @@
+import { join } from 'node:path'
+
 import { eq } from 'drizzle-orm'
 
 import { colleagueEnv } from './identity'
@@ -9,7 +11,9 @@ import type { Db } from './store/db'
 import { runPlan } from './store/reads'
 import { threads } from './store/schema'
 import { killGroup } from './process'
-import { finishThread, recordColleaguePid, recordSession } from './store/threads'
+import { parloHome } from './store/home'
+import { finishThread, recordColleaguePid, recordCwd, recordSession } from './store/threads'
+import { makeWorktree } from './worktree'
 
 function statusOf(db: Db, threadId: number) {
   return db.select({ status: threads.status }).from(threads).where(eq(threads.id, threadId)).get()!.status
@@ -26,12 +30,24 @@ export async function driveThread(db: Db, threadId: number, turn: number, onProg
   if (plan.status !== 'running' || plan.turn !== turn) {
     return false
   }
+  const runner = runnerFor(plan.vendor)
+  let cwd = plan.cwd
+  if (plan.resume === null && plan.access === 'worktree' && !runner.ownWorktree) {
+    const path = join(parloHome(), 'worktrees', String(threadId))
+    const made = makeWorktree(plan.cwd, path)
+    if (!made.ok) {
+      finishThread(db, threadId, { kind: 'failed', reason: made.reason }, new Date())
+      return true
+    }
+    recordCwd(db, plan.colleagueAgentId, path)
+    cwd = path
+  }
   const outcome = await runColleague(
-    runnerFor(plan.vendor),
+    runner,
     {
       prompt: plan.resume === null ? firstPrompt(plan.body, plan.access, plan.callerVendor) : plan.body,
       access: plan.access,
-      cwd: plan.cwd,
+      cwd,
       resume: plan.resume,
     },
     {

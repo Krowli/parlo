@@ -43,7 +43,7 @@ describe('parlo ask', () => {
     expect(result.code).toBe(0)
     const [first, second] = fake.calls()
     expect(first.stdin).toContain('parlo started you as a colleague')
-    expect(second.argv).toEqual(['exec', 'resume', '--json', '--skip-git-repo-check', '01a192ad-cd04-7480-9d95-797c1fc3c4ec', '-'])
+    expect(second.argv).toEqual(['exec', '--json', '--skip-git-repo-check', '-s', 'read-only', '-C', first.cwd, 'resume', '01a192ad-cd04-7480-9d95-797c1fc3c4ec', '-'])
     expect(second.stdin).toBe('second')
   })
 

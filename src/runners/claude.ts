@@ -50,6 +50,7 @@ function createClaudeParser(): StreamParser {
 export const claudeRunner: Runner = {
   vendor: 'claude',
   command: 'claude',
+  ownWorktree: true,
   args(request) {
     // The prompt goes in on stdin; `-p` reads it from there.
     const common = ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', PERMISSION_MODE[request.access]]

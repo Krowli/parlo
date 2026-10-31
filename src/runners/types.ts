@@ -33,6 +33,12 @@ export interface StreamParser {
 export interface Runner {
   vendor: ColleagueVendor
   command: string
+  /**
+   * Whether the CLI makes and keeps its own worktree for `worktree` access
+   * (Claude Code's `-w` does, and resumes into it). When false, parlo makes the
+   * worktree and passes it as the colleague's cwd on every turn.
+   */
+  ownWorktree: boolean
   args(request: RunRequest): string[]
   createParser(): StreamParser
 }

@@ -72,18 +72,13 @@ function createCodexParser(): StreamParser {
 export const codexRunner: Runner = {
   vendor: 'codex',
   command: 'codex',
+  ownWorktree: false,
   args(request) {
-    // The prompt goes in on stdin (`-`). A prompt in argv could be read as a flag.
-    if (request.resume !== null) {
-      return ['exec', 'resume', '--json', '--skip-git-repo-check', request.resume, '-']
-    }
-    return [
-      'exec', '--json', '--skip-git-repo-check',
-      '-s', request.access === 'read' ? 'read-only' : 'workspace-write',
-      '-C', request.cwd,
-      ...(request.access === 'worktree' ? ['--worktree'] : []),
-      '-',
-    ]
+    // The sandbox and the directory go in on every turn, before `resume`, as the
+    // Codex SDK does; the user's config must not decide them on a follow-up.
+    // The prompt goes in on stdin (`-`): a prompt in argv could be read as a flag.
+    const common = ['exec', '--json', '--skip-git-repo-check', '-s', request.access === 'read' ? 'read-only' : 'workspace-write', '-C', request.cwd]
+    return request.resume === null ? [...common, '-'] : [...common, 'resume', request.resume, '-']
   },
   createParser: createCodexParser,
 }

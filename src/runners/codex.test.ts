@@ -13,14 +13,14 @@ describe('codexRunner.args', () => {
       .toEqual(['exec', '--json', '--skip-git-repo-check', '-s', 'read-only', '-C', '/w', '-'])
   })
 
-  it('starts a worktree session that may write', () => {
-    expect(codexRunner.args({ prompt: 'x', access: 'worktree', cwd: '/w', resume: null }))
-      .toEqual(['exec', '--json', '--skip-git-repo-check', '-s', 'workspace-write', '-C', '/w', '--worktree', '-'])
+  it('runs a worktree session in the worktree parlo made, and lets it write there', () => {
+    expect(codexRunner.args({ prompt: 'x', access: 'worktree', cwd: '/home/.parlo/worktrees/1', resume: null }))
+      .toEqual(['exec', '--json', '--skip-git-repo-check', '-s', 'workspace-write', '-C', '/home/.parlo/worktrees/1', '-'])
   })
 
-  it('resumes without a sandbox flag: the session keeps the one it started with', () => {
+  it('resumes with the sandbox and directory given again, as the Codex SDK does on every turn', () => {
     expect(codexRunner.args({ prompt: 'x', access: 'read', cwd: '/w', resume: 'sid' }))
-      .toEqual(['exec', 'resume', '--json', '--skip-git-repo-check', 'sid', '-'])
+      .toEqual(['exec', '--json', '--skip-git-repo-check', '-s', 'read-only', '-C', '/w', 'resume', 'sid', '-'])
   })
 })
 

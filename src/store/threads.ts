@@ -129,6 +129,10 @@ export function recordSession(db: Db, agentId: number, sessionId: string, cwd?: 
   db.update(agents).set(cwd === undefined ? { vendorSessionId: sessionId } : { vendorSessionId: sessionId, cwd }).where(eq(agents.id, agentId)).run()
 }
 
+export function recordCwd(db: Db, agentId: number, cwd: string): void {
+  db.update(agents).set({ cwd }).where(eq(agents.id, agentId)).run()
+}
+
 export function recordColleaguePid(db: Db, threadId: number, pid: number): void {
   db.update(threads).set({ colleaguePid: pid }).where(eq(threads.id, threadId)).run()
 }
