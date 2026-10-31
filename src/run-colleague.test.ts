@@ -65,17 +65,20 @@ describe('runColleague', () => {
 
   it('stops a colleague that passes its deadline', async () => {
     const fake = fakeCli('codex', [{ stdout: fixture('codex-reply.jsonl'), delayMs: 60_000 }])
-    const outcome = await runColleague(codexRunner, { prompt: 'x', access: 'read', cwd: workdir(), resume: null }, { onProgress: () => {} }, { deadlineMs: 500, env: testEnv({ PATH: testPath(fake.binDir) }) })
+    // The pid from the spawn itself: under load the fake may not have started, let alone recorded its call, within 500 ms.
+    let pid = 0
+    const outcome = await runColleague(codexRunner, { prompt: 'x', access: 'read', cwd: workdir(), resume: null }, { onProgress: () => {}, onPid: p => { pid = p } }, { deadlineMs: 500, env: testEnv({ PATH: testPath(fake.binDir) }) })
     expect(outcome).toEqual({ kind: 'timeout' })
-    expect(await gone(fake.calls()[0].pid)).toBe(true)
+    expect(await gone(pid)).toBe(true)
   })
 
   it('stops the colleague when parlo is told to stop', async () => {
     const fake = fakeCli('codex', [{ stdout: fixture('codex-reply.jsonl'), delayMs: 60_000 }])
     const controller = new AbortController()
     setTimeout(() => controller.abort(), 500)
-    const outcome = await runColleague(codexRunner, { prompt: 'x', access: 'read', cwd: workdir(), resume: null }, { onProgress: () => {} }, { deadlineMs: 60_000, env: testEnv({ PATH: testPath(fake.binDir) }), signal: controller.signal })
+    let pid = 0
+    const outcome = await runColleague(codexRunner, { prompt: 'x', access: 'read', cwd: workdir(), resume: null }, { onProgress: () => {}, onPid: p => { pid = p } }, { deadlineMs: 60_000, env: testEnv({ PATH: testPath(fake.binDir) }), signal: controller.signal })
     expect(outcome).toEqual({ kind: 'stopped' })
-    expect(await gone(fake.calls()[0].pid)).toBe(true)
+    expect(await gone(pid)).toBe(true)
   })
 })
