@@ -1,6 +1,6 @@
 import type { ThreadEvent, ThreadItem } from '@openai/codex-sdk'
 
-import { lastLine, oneLine } from './text'
+import { lastLine, oneLine, parseJsonLine } from './text'
 import type { Runner, RunEvent, StreamParser } from './types'
 
 /** `/bin/zsh -lc 'ls -la'` → `ls -la`: Codex wraps each command in a login shell. */
@@ -28,10 +28,10 @@ function createCodexParser(): StreamParser {
   let error: string | null = null
   return {
     push(line) {
-      if (!line.startsWith('{')) {
+      const event = parseJsonLine<ThreadEvent>(line)
+      if (event === null) {
         return []
       }
-      const event = JSON.parse(line) as ThreadEvent
       switch (event.type) {
         case 'thread.started':
           return [{ kind: 'session', sessionId: event.thread_id }]

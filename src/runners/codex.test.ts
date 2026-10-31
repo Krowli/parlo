@@ -54,3 +54,12 @@ describe('codexRunner parser', () => {
     expect(parser.end(2, 'first\nnot logged in\n')).toEqual({ kind: 'failed', reason: 'codex: exited with code 2: not logged in' })
   })
 })
+
+describe('codexRunner parser, broken input', () => {
+  it('skips a line that is not valid JSON instead of throwing (a cut or garbled line)', () => {
+    const parser = codexRunner.createParser()
+    expect(parser.push('{not json')).toEqual([])
+    fixture('codex-reply.jsonl').forEach(line => parser.push(line))
+    expect(parser.end(0, '')).toEqual({ kind: 'reply', text: 'pong' })
+  })
+})

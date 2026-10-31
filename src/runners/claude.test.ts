@@ -44,3 +44,22 @@ describe('claudeRunner parser', () => {
     expect(claudeRunner.createParser().end(1, 'Invalid API key\n')).toEqual({ kind: 'failed', reason: 'claude: exited with code 1: Invalid API key' })
   })
 })
+
+describe('claudeRunner parser, errors that say why', () => {
+  it('skips a line that is not valid JSON instead of throwing', () => {
+    const parser = claudeRunner.createParser()
+    expect(parser.push('{"type":"assistant","message":{"con')).toEqual([])
+  })
+
+  it('reports the text of a "success" result that is an error (logged out, API error)', () => {
+    const parser = claudeRunner.createParser()
+    parser.push('{"type":"result","subtype":"success","is_error":true,"result":"Invalid API key · Please run /login","session_id":"s","uuid":"u"}')
+    expect(parser.end(1, '')).toEqual({ kind: 'failed', reason: 'claude: Invalid API key · Please run /login' })
+  })
+
+  it('reports the first error of an error result', () => {
+    const parser = claudeRunner.createParser()
+    parser.push('{"type":"result","subtype":"error_during_execution","is_error":true,"errors":["Could not connect to the API"],"session_id":"s","uuid":"u"}')
+    expect(parser.end(1, '')).toEqual({ kind: 'failed', reason: 'claude: error_during_execution: Could not connect to the API' })
+  })
+})

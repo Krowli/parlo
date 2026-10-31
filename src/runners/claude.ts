@@ -1,6 +1,6 @@
 import type { SDKMessage, SDKResultMessage } from '@anthropic-ai/claude-agent-sdk'
 
-import { lastLine, oneLine } from './text'
+import { lastLine, oneLine, parseJsonLine } from './text'
 import type { Access, Runner, RunEvent, StreamParser } from './types'
 
 /** Spike result 6: with no mode, `-p` follows the person's own settings and wrote files; `plan` did not. */
@@ -15,8 +15,8 @@ function createClaudeParser(): StreamParser {
   let result: SDKResultMessage | null = null
   return {
     push(line) {
-      if (!line.startsWith('{')) return []
-      const message = JSON.parse(line) as SDKMessage
+      const message = parseJsonLine<SDKMessage>(line)
+      if (message === null) return []
       if (message.type === 'system' && message.subtype === 'init') {
         return [{ kind: 'session', sessionId: message.session_id, cwd: message.cwd }]
       }
@@ -33,8 +33,14 @@ function createClaudeParser(): StreamParser {
       return []
     },
     end(exitCode, stderrTail) {
-      if (result?.subtype === 'success' && !result.is_error) return { kind: 'reply', text: result.result }
-      if (result !== null) return { kind: 'failed', reason: `claude: ${result.subtype}` }
+      if (result?.subtype === 'success') {
+        // A "success" with is_error set carries the error in `result`: a logged-out CLI, an API error.
+        return result.is_error ? { kind: 'failed', reason: `claude: ${oneLine(result.result)}` } : { kind: 'reply', text: result.result }
+      }
+      if (result !== null) {
+        const why = result.errors?.[0]
+        return { kind: 'failed', reason: why === undefined ? `claude: ${result.subtype}` : `claude: ${result.subtype}: ${oneLine(why)}` }
+      }
       return { kind: 'failed', reason: `claude: exited with code ${exitCode}: ${lastLine(stderrTail)}` }
     },
   }
