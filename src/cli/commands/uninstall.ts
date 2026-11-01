@@ -7,7 +7,7 @@ import { openStore } from '../../store/open'
 import { confirm, installsFor, removable, reportSkipped, tildify } from './connect'
 import { stopTargets } from '../../stop'
 
-const LAST_STEP = 'Last step: npm uninstall -g parlo'
+const LAST_STEP = 'Last step: npm uninstall -g parlo-cli'
 
 /**
  * Take out everything parlo put on this machine while it is still installed:

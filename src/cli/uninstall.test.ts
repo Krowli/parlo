@@ -30,7 +30,7 @@ describe('parlo uninstall', () => {
     expect(existsSync(join(dir, '.agents/skills/parlo'))).toBe(false)
     expect(existsSync(join(dir, '.codex/rules/parlo.rules'))).toBe(false)
     expect(existsSync(join(dir, '.parlo/parlo.db'))).toBe(true)
-    expect(result.stdout).toContain('Last step: npm uninstall -g parlo')
+    expect(result.stdout).toContain('Last step: npm uninstall -g parlo-cli')
   })
 
   it('keeps ~/.parlo on --purge without a terminal to confirm in', async () => {
@@ -56,6 +56,6 @@ describe('parlo uninstall', () => {
 
   it('says when there is nothing to remove', async () => {
     const { env } = user()
-    expect((await runCli(['uninstall', '--yes'], env)).stdout).toBe('parlo: nothing to remove. Last step: npm uninstall -g parlo\n')
+    expect((await runCli(['uninstall', '--yes'], env)).stdout).toBe('parlo: nothing to remove. Last step: npm uninstall -g parlo-cli\n')
   })
 })

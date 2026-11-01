@@ -115,7 +115,7 @@ function buildProgram(): Command {
     .action((agent: ColleagueVendor) => { process.exitCode = disconnectCommand(agent) })
 
   program.command('uninstall')
-    .description('Stop every colleague and remove what parlo installed; then run npm uninstall -g parlo.')
+    .description('Stop every colleague and remove what parlo installed; then run npm uninstall -g parlo-cli.')
     .option('--yes', 'remove without asking')
     .option('--purge', 'also delete ~/.parlo (asks in a terminal; --yes does not answer it)')
     .action(async (flags: { yes?: boolean; purge?: boolean }) => {

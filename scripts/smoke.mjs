@@ -14,5 +14,5 @@ const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 if (run('--version').trim() !== version) throw new Error('version mismatch')
 if (run('threads') !== 'parlo: no threads yet.\n') throw new Error('threads failed: migrations not found from dist?')
 run('connect', 'claude', '--yes')
-if (!run('uninstall', '--yes').includes('Last step: npm uninstall -g parlo')) throw new Error('uninstall failed')
+if (!run('uninstall', '--yes').includes('Last step: npm uninstall -g parlo-cli')) throw new Error('uninstall failed')
 console.log('smoke ok')

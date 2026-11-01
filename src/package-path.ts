@@ -11,7 +11,7 @@ export function packagePath(...parts: string[]): string {
   let dir = dirname(fileURLToPath(import.meta.url))
   for (;;) {
     const manifest = join(dir, 'package.json')
-    if (existsSync(manifest) && (JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string }).name === 'parlo') {
+    if (existsSync(manifest) && (JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string }).name === 'parlo-cli') {
       return join(dir, ...parts)
     }
     const parent = dirname(dir)

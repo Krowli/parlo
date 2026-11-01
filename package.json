@@ -1,5 +1,5 @@
 {
-  "name": "parlo",
+  "name": "parlo-cli",
   "version": "0.1.0",
   "description": "Your coding agents talk to each other: Claude Code and Codex work a problem out together, in threads, in both directions.",
   "keywords": [
