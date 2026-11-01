@@ -10,6 +10,8 @@ Claude Code and Codex work a problem out together: one brings the other in, it d
 
 Claude Code and Codex today. Each agent plugs into parlo through one small adapter (`src/runners/`), so more agents can join.
 
+Website and docs: [parlo.aioomi.com](https://parlo.aioomi.com)
+
 ## Quick start
 
 ```bash
